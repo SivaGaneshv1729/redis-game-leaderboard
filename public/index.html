@@ -3,64 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redis Live Leaderboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+  <title>Cosmic Live Leaderboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --accent: #38bdf8;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --border-color: rgba(255, 255, 255, 0.1);
+      --space-dark: #050510;
+      --nebula-purple: #2a0a4a;
+      --star-blue: #4af;
+      --hud-cyan: #0ff;
+      --hud-gold: #fb0;
+      --panel-bg: rgba(5, 10, 20, 0.85);
+      --border-glow: rgba(0, 255, 255, 0.4);
     }
     
     body {
       margin: 0;
       padding: 0;
-      font-family: 'Outfit', sans-serif;
-      background: radial-gradient(circle at top right, #1e1b4b, var(--bg-dark));
-      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      background-color: var(--space-dark);
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(42, 10, 74, 0.6) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(10, 42, 74, 0.5) 0%, transparent 50%);
+      color: #fff;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 3rem;
+      padding-top: 2rem;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* CSS Stars Background */
+    .stars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: transparent;
+      background-image: 
+        radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 50px 160px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 90px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 160px 120px, #ddd, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 200px 200px;
+      animation: drift 100s linear infinite;
+    }
+
+    @keyframes drift {
+      from { transform: translateY(0); }
+      to { transform: translateY(-1000px); }
     }
 
     h1 {
+      font-family: 'Orbitron', sans-serif;
       font-size: 3rem;
-      background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--hud-cyan);
+      text-shadow: 0 0 10px var(--hud-cyan), 0 0 20px rgba(0, 255, 255, 0.5);
       margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border-glow);
+      padding-bottom: 0.5rem;
     }
 
     .container {
       display: flex;
       gap: 2rem;
-      width: 90%;
-      max-width: 1200px;
+      width: 95%;
+      max-width: 1400px;
+      z-index: 1;
     }
 
     .panel {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-color);
-      border-radius: 24px;
-      padding: 2rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.1), inset 0 0 20px rgba(0, 255, 255, 0.05);
+      border-radius: 4px;
+      padding: 1.5rem;
       flex: 1;
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 20px; height: 20px;
+      border-top: 2px solid var(--hud-cyan);
+      border-left: 2px solid var(--hud-cyan);
+    }
+    .panel::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 20px; height: 20px;
+      border-bottom: 2px solid var(--hud-cyan);
+      border-right: 2px solid var(--hud-cyan);
     }
 
     .panel h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      color: var(--star-blue);
+      text-transform: uppercase;
+      letter-spacing: 2px;
       margin-top: 0;
-      font-size: 1.5rem;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+      padding-bottom: 0.5rem;
       margin-bottom: 1.5rem;
     }
 
@@ -72,125 +129,144 @@
     }
 
     .leaderboard-item {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
       align-items: center;
-      padding: 1rem;
+      padding: 0.75rem 1rem;
       margin-bottom: 0.5rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(0, 255, 255, 0.05), transparent);
+      border-left: 3px solid var(--hud-cyan);
       transition: transform 0.2s, background 0.2s;
     }
 
     .leaderboard-item:hover {
-      transform: translateX(5px);
-      background: rgba(255, 255, 255, 0.08);
+      background: linear-gradient(90deg, rgba(0, 255, 255, 0.15), transparent);
+      border-left-color: var(--hud-gold);
+      transform: translateX(4px);
     }
 
     .rank {
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      color: var(--accent);
-      width: 30px;
+      color: var(--hud-gold);
     }
 
     .player {
-      flex: 1;
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
     }
 
     .score {
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      background: rgba(56, 189, 248, 0.2);
-      color: var(--accent);
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
+      color: var(--hud-cyan);
+      text-shadow: 0 0 5px var(--hud-cyan);
     }
 
     /* Events Styles */
     .events-container {
       flex: 1;
       overflow-y: auto;
-      max-height: 400px;
+      max-height: 500px;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      padding-right: 10px;
+    }
+
+    /* Custom Scrollbar for Sci-Fi look */
+    .events-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .events-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .events-container::-webkit-scrollbar-thumb {
+      background: var(--hud-cyan);
     }
 
     .event-item {
-      padding: 1rem;
-      background: rgba(52, 211, 153, 0.1);
-      border-left: 4px solid #34d399;
-      border-radius: 0 8px 8px 0;
+      padding: 0.75rem 1rem;
+      background: rgba(0, 255, 255, 0.05);
+      border: 1px solid rgba(0, 255, 255, 0.2);
       animation: slideIn 0.3s ease-out forwards;
-      font-size: 0.9rem;
+      font-size: 1.1rem;
+      position: relative;
     }
-
-    .event-item.score-update {
-      background: rgba(129, 140, 248, 0.1);
-      border-color: #818cf8;
+    
+    .event-item::before {
+      content: '> ';
+      color: var(--hud-gold);
+      font-family: 'Orbitron', sans-serif;
     }
 
     @keyframes slideIn {
-      from { opacity: 0; transform: translateX(-20px); }
+      from { opacity: 0; transform: translateX(-10px); }
       to { opacity: 1; transform: translateX(0); }
     }
 
-    /* Action Buttons (Simulation) */
+    /* Action Buttons */
     .actions {
-      margin-top: 2rem;
+      margin-top: 3rem;
       display: flex;
       gap: 1rem;
-      justify-content: center;
-      width: 100%;
+      z-index: 1;
     }
 
     button {
-      background: linear-gradient(45deg, #38bdf8, #818cf8);
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
-      border-radius: 30px;
-      font-family: inherit;
+      background: rgba(0, 255, 255, 0.1);
+      color: var(--hud-cyan);
+      border: 1px solid var(--hud-cyan);
+      padding: 1rem 2.5rem;
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
       font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
     }
 
     button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px -10px rgba(56, 189, 248, 0.8);
+      background: var(--hud-cyan);
+      color: #000;
+      box-shadow: 0 0 20px var(--hud-cyan);
     }
 
     button:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
   </style>
 </head>
 <body>
 
-  <h1>Live Quiz Leaderboard</h1>
+  <div class="stars"></div>
+
+  <h1>Cosmic Protocol</h1>
 
   <div class="container">
     <!-- Leaderboard Panel -->
     <div class="panel">
-      <h2>🏆 Top Players</h2>
+      <h2>// Galactic Rankings</h2>
       <ul class="leaderboard-list" id="leaderboard">
-        <div style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading...</div>
+        <div style="text-align:center; padding: 2rem; color: rgba(255,255,255,0.5);">INITIALIZING TELEMETRY...</div>
       </ul>
     </div>
 
     <!-- Live Events Panel -->
     <div class="panel">
-      <h2>📡 Live Events Feed</h2>
+      <h2>// Subspace Comm Link</h2>
       <div class="events-container" id="events-log">
-        <div style="text-align:center; padding: 2rem; color: var(--text-muted);" id="waiting-msg">Waiting for events...</div>
+        <div style="text-align:center; padding: 2rem; color: rgba(255,255,255,0.5);" id="waiting-msg">AWAITING TRANSMISSIONS...</div>
       </div>
     </div>
   </div>
 
   <div class="actions">
-    <button onclick="simulateSubmission()">Simulate Random Answer</button>
+    <button onclick="simulateSubmission()">Transmit Data</button>
   </div>
 
   <script>
@@ -212,7 +288,7 @@
         const li = document.createElement('li');
         li.className = 'leaderboard-item';
         li.innerHTML = `
-          <span class="rank">#${p.rank}</span>
+          <span class="rank">${p.rank}</span>
           <span class="player">${p.playerId}</span>
           <span class="score">${p.score.toLocaleString()}</span>
         `;
@@ -231,8 +307,8 @@
       if (waiting) waiting.remove();
 
       const eventDiv = document.createElement('div');
-      eventDiv.className = 'event-item score-update';
-      eventDiv.innerHTML = `<strong>${data.playerId}</strong> scored points! New total: <strong>${data.newScore}</strong>`;
+      eventDiv.className = 'event-item';
+      eventDiv.innerHTML = `Unit <span style="color:var(--hud-cyan)">${data.playerId}</span> acquired resources. Total yield: <span style="color:var(--hud-gold)">${data.newScore}</span>`;
       
       eventsLog.prepend(eventDiv);
       
@@ -246,9 +322,9 @@
 
     // 3. Simulate Gameplay
     async function simulateSubmission() {
-      const players = ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'];
+      const players = ['Apollo', 'Starbuck', 'Adama', 'Boomer', 'Athena', 'Tyrol'];
       const randomPlayer = players[Math.floor(Math.random() * players.length)];
-      const points = Math.floor(Math.random() * 50) + 10; // 10-60 points
+      const points = Math.floor(Math.random() * 500) + 100; // 100-600 points
 
       try {
         await fetch('/api/leaderboard/scores', {
