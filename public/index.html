@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redis Live Leaderboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --accent: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at top right, #1e1b4b, var(--bg-dark));
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 3rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 2rem;
+    }
+
+    .container {
+      display: flex;
+      gap: 2rem;
+      width: 90%;
+      max-width: 1200px;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Leaderboard Styles */
+    .leaderboard-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .leaderboard-item:hover {
+      transform: translateX(5px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .rank {
+      font-weight: 700;
+      color: var(--accent);
+      width: 30px;
+    }
+
+    .player {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .score {
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+    }
+
+    /* Events Styles */
+    .events-container {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .event-item {
+      padding: 1rem;
+      background: rgba(52, 211, 153, 0.1);
+      border-left: 4px solid #34d399;
+      border-radius: 0 8px 8px 0;
+      animation: slideIn 0.3s ease-out forwards;
+      font-size: 0.9rem;
+    }
+
+    .event-item.score-update {
+      background: rgba(129, 140, 248, 0.1);
+      border-color: #818cf8;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Action Buttons (Simulation) */
+    .actions {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      width: 100%;
+    }
+
+    button {
+      background: linear-gradient(45deg, #38bdf8, #818cf8);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 30px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -10px rgba(56, 189, 248, 0.8);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Live Quiz Leaderboard</h1>
+
+  <div class="container">
+    <!-- Leaderboard Panel -->
+    <div class="panel">
+      <h2>🏆 Top Players</h2>
+      <ul class="leaderboard-list" id="leaderboard">
+        <div style="text-align:center; padding: 2rem; color: var(--text-muted);">Loading...</div>
+      </ul>
+    </div>
+
+    <!-- Live Events Panel -->
+    <div class="panel">
+      <h2>📡 Live Events Feed</h2>
+      <div class="events-container" id="events-log">
+        <div style="text-align:center; padding: 2rem; color: var(--text-muted);" id="waiting-msg">Waiting for events...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button onclick="simulateSubmission()">Simulate Random Answer</button>
+  </div>
+
+  <script>
+    // 1. Fetch initial leaderboard
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch('/api/leaderboard/top/10');
+        const data = await res.json();
+        renderLeaderboard(data);
+      } catch (err) {
+        console.error('Failed to fetch leaderboard', err);
+      }
+    }
+
+    function renderLeaderboard(data) {
+      const list = document.getElementById('leaderboard');
+      list.innerHTML = '';
+      data.forEach((p, idx) => {
+        const li = document.createElement('li');
+        li.className = 'leaderboard-item';
+        li.innerHTML = `
+          <span class="rank">#${p.rank}</span>
+          <span class="player">${p.playerId}</span>
+          <span class="score">${p.score.toLocaleString()}</span>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    // 2. Connect to Server-Sent Events (SSE)
+    const evtSource = new EventSource('/api/events');
+    const eventsLog = document.getElementById('events-log');
+    
+    evtSource.addEventListener('leaderboard_updated', (e) => {
+      const data = JSON.parse(e.data);
+      
+      const waiting = document.getElementById('waiting-msg');
+      if (waiting) waiting.remove();
+
+      const eventDiv = document.createElement('div');
+      eventDiv.className = 'event-item score-update';
+      eventDiv.innerHTML = `<strong>${data.playerId}</strong> scored points! New total: <strong>${data.newScore}</strong>`;
+      
+      eventsLog.prepend(eventDiv);
+      
+      // Refresh leaderboard when a score updates
+      fetchLeaderboard();
+    });
+
+    evtSource.onerror = (err) => {
+      console.error("SSE Error:", err);
+    };
+
+    // 3. Simulate Gameplay
+    async function simulateSubmission() {
+      const players = ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'];
+      const randomPlayer = players[Math.floor(Math.random() * players.length)];
+      const points = Math.floor(Math.random() * 50) + 10; // 10-60 points
+
+      try {
+        await fetch('/api/leaderboard/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId: randomPlayer, points })
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Initialize
+    fetchLeaderboard();
+  </script>
+</body>
+</html>

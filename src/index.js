@@ -9,6 +9,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static('public')); // Serve the frontend dashboard
 
 app.get('/health', async (req, res) => {
   try {
