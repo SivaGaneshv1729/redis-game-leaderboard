@@ -50,18 +50,61 @@ A high-performance, real-time backend and dashboard for a competitive game platf
 ## API Endpoints
 
 ### Sessions
-- `POST /api/sessions` - Create a new session (atomically invalidates old ones).
-- `GET /api/admin/sessions/user/:userId` - View all active sessions for a user.
-- `DELETE /api/admin/sessions/:sessionId` - Forcefully terminate a specific session.
+
+#### `POST /api/sessions`
+Create a new session. Atomically invalidates any old sessions for the user using Lua scripts.
+- **Body**: `{ "userId": "string", "ipAddress": "string" (optional), "deviceType": "string" (optional) }`
+- **Response**: `201 Created` with `{ "sessionId": "uuid" }`
+
+#### `GET /api/admin/sessions/user/:userId`
+View all active sessions for a user.
+- **Response**: `200 OK` with `[ { "sessionId": "uuid", "userId": "string", "createdAt": "iso-date", "lastActive": "iso-date", "ipAddress": "string", "deviceType": "string" } ]`
+
+#### `DELETE /api/admin/sessions/:sessionId`
+Forcefully terminate a specific session.
+- **Response**: `204 No Content`
 
 ### Game Logic & Leaderboard
-- `POST /api/game/submit` - Process an answer and update score (atomic).
-- `POST /api/leaderboard/scores` - Directly update a player's score.
-- `GET /api/leaderboard/top/:count` - Fetch the top `N` players.
-- `GET /api/leaderboard/player/:playerId` - Get a specific player's rank, score, and surrounding percentile.
+
+#### `POST /api/game/submit`
+Process a player's answer and update their score. Uses an atomic Redis transaction to validate against duplicate submissions and active rounds.
+- **Body**: `{ "gameId": "string", "roundId": "string", "playerId": "string", "answer": "string" }`
+- **Response**: 
+  - `200 OK`: `{ "status": "SUCCESS", "newScore": 125 }`
+  - `400 Bad Request`: `{ "status": "ERROR", "code": "DUPLICATE_SUBMISSION" }`
+  - `403 Forbidden`: `{ "status": "ERROR", "code": "ROUND_EXPIRED" }`
+
+#### `POST /api/leaderboard/scores`
+Directly update a player's score.
+- **Body**: `{ "playerId": "string", "points": number }`
+- **Response**: `200 OK` with `{ "playerId": "string", "newScore": number }`
+
+#### `GET /api/leaderboard/top/:count`
+Fetch the top `N` players.
+- **Response**: `200 OK` with `[ { "rank": 1, "playerId": "string", "score": 150 } ]`
+
+#### `GET /api/leaderboard/player/:playerId`
+Get a specific player's rank, score, percentile, and nearby players on the leaderboard.
+- **Response**: `200 OK` with 
+```json
+{
+  "playerId": "string",
+  "score": 125,
+  "rank": 2,
+  "percentile": 95.5,
+  "nearbyPlayers": {
+    "above": [ { "rank": 1, "playerId": "string", "score": 150 } ],
+    "below": [ { "rank": 3, "playerId": "string", "score": 110 } ]
+  }
+}
+```
 
 ### Real-Time Events
-- `GET /api/events` - SSE endpoint. Connect to receive live data when the leaderboard updates.
+
+#### `GET /api/events`
+Server-Sent Events (SSE) endpoint. Connect to receive live data when the leaderboard updates.
+- **Event**: `leaderboard_updated`
+- **Data Payload**: `{ "playerId": "string", "newScore": number }`
 
 ## Memory Analysis
 
